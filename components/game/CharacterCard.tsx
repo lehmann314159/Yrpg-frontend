@@ -4,7 +4,7 @@ import type { CharacterView } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { Shield, Wand2, Eye } from 'lucide-react';
+import { Shield, Wand2, Eye, Sword, ShieldHalf } from 'lucide-react';
 
 const classIcons: Record<CharacterView['class'], React.ReactNode> = {
   fighter: <Shield className="h-3.5 w-3.5" />,
@@ -87,6 +87,22 @@ export function CharacterCard({ character, compact, isCurrentTurn, isSelected, o
               </span>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Equipped items */}
+      {c.isAlive && (c.equippedWeapon || c.equippedArmor) && (
+        <div className="flex gap-3 mt-1.5 text-[10px] text-stone-400">
+          {c.equippedWeapon && (
+            <span className="flex items-center gap-0.5">
+              <Sword className="h-2.5 w-2.5" /> {c.equippedWeapon.name}
+            </span>
+          )}
+          {c.equippedArmor && (
+            <span className="flex items-center gap-0.5">
+              <ShieldHalf className="h-2.5 w-2.5" /> {c.equippedArmor.name}
+            </span>
+          )}
         </div>
       )}
 

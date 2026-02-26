@@ -9,6 +9,7 @@ export type TargetingMode =
   | 'item'
   | 'trap'
   | 'grid_cell'
+  | 'direction'
   | 'spell_then_target';
 
 export interface PendingAction {
@@ -145,12 +146,61 @@ export function getAvailableActions(
       });
     }
 
+    // Scout ahead (thief only, when no monsters in current room)
+    if (char.class === 'thief' && (gs.monsters || []).length === 0) {
+      actions.push({
+        id: 'scout_ahead',
+        label: 'Scout Ahead',
+        icon: 'Radar',
+        toolName: 'scout_ahead',
+        targeting: 'direction',
+        targetPrompt: 'Select a direction to scout ahead',
+        needsCharacterId: true,
+        targetArgName: 'direction',
+      });
+    }
+
+    // Sneak/peek (thief only, when no monsters in current room)
+    if (char.class === 'thief' && (gs.monsters || []).length === 0) {
+      actions.push({
+        id: 'sneak',
+        label: 'Sneak Peek',
+        icon: 'EyeOff',
+        toolName: 'sneak',
+        targeting: 'direction',
+        targetPrompt: 'Select a direction to sneak peek',
+        needsCharacterId: true,
+        targetArgName: 'direction',
+      });
+    }
+
   } else if (gs.mode === 'combat' && gs.combat?.isActive) {
     // Combat actions — only available on current turn character
     if (!isCurrentTurn(gs, selectedCharId)) return [];
 
     const combatant = getCombatant(gs, selectedCharId);
     if (!combatant) return [];
+
+    // Scout decision phase — only signal_party or retreat
+    if (gs.combat.awaitingScoutDecision) {
+      actions.push({
+        id: 'signal_party',
+        label: 'Signal Party',
+        icon: 'Users',
+        toolName: 'signal_party',
+        targeting: 'none',
+        needsCharacterId: true,
+      });
+      actions.push({
+        id: 'retreat',
+        label: 'Retreat',
+        icon: 'LogOut',
+        toolName: 'combat_retreat',
+        targeting: 'none',
+        needsCharacterId: true,
+      });
+      return actions;
+    }
 
     // Attack (if hasn't acted)
     if (!combatant.hasActed) {

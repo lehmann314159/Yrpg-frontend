@@ -250,13 +250,20 @@ export default function GamePage() {
     [gameState]
   );
 
-  // Exit click
+  // Exit click — also handles direction targeting (scout_ahead, sneak)
   const handleExitClick = useCallback(
     (direction: string) => {
       if (loading) return;
-      executeAction('move', { direction });
+      if (pendingAction?.targeting === 'direction') {
+        const argName = pendingAction.targetArgName || 'direction';
+        const args = { ...pendingAction.args, [argName]: direction };
+        setPendingAction(null);
+        executeAction(pendingAction.toolName, args);
+      } else {
+        executeAction('move', { direction });
+      }
     },
-    [loading, executeAction]
+    [loading, pendingAction, executeAction]
   );
 
   // Start game

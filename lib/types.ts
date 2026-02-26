@@ -34,6 +34,8 @@ export interface CharacterView {
   maxSpellSlots: number;
   knownSpells: string[];
   inventory: ItemView[];
+  equippedWeapon: ItemView | null;
+  equippedArmor: ItemView | null;
   isAlive: boolean;
   status: 'Healthy' | 'Wounded' | 'Critical' | 'Dead';
 }
@@ -89,6 +91,8 @@ export interface CombatView {
   currentTurnIdx: number;
   roundNumber: number;
   isActive: boolean;
+  awaitingScoutDecision: boolean;
+  isScoutPhase: boolean;
 }
 
 export interface CombatantView {

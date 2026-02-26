@@ -47,11 +47,23 @@ export function CombatGrid({
         <h3 className="text-xs font-semibold text-stone-400 uppercase tracking-wider">
           Combat &mdash; Round {combat.roundNumber}
         </h3>
-        {currentCombatant && (
-          <span className="text-xs text-amber-400">
-            {currentCombatant.name}&apos;s turn
-          </span>
-        )}
+        <div className="flex items-center gap-2">
+          {combat.isScoutPhase && (
+            <span className="text-[10px] font-bold uppercase tracking-wider text-violet-400 bg-violet-950/40 px-2 py-0.5 rounded border border-violet-800">
+              Surprise Round
+            </span>
+          )}
+          {combat.awaitingScoutDecision && (
+            <span className="text-[10px] font-bold uppercase tracking-wider text-amber-400 bg-amber-950/40 px-2 py-0.5 rounded border border-amber-800">
+              Scout Decision
+            </span>
+          )}
+          {currentCombatant && (
+            <span className="text-xs text-amber-400">
+              {currentCombatant.name}&apos;s turn
+            </span>
+          )}
+        </div>
       </div>
 
       {/* 6x6 grid — rendered with Y=5 at top, Y=0 at bottom */}
@@ -100,11 +112,13 @@ export function CombatGrid({
                   isAllyClickable && 'bg-blue-900/50 border border-blue-700 ring-2 ring-blue-400 cursor-pointer hover:bg-blue-800/50',
                   isCurrentTurn && !isClickable && 'ring-2 ring-amber-500',
                   combatant && !combatant.isAlive && 'opacity-30',
+                  // Frozen monsters during scout phase
+                  combat.isScoutPhase && combatant && !combatant.isPlayerChar && combatant.isAlive && 'opacity-50 grayscale',
                   combatant?.isHidden && 'border-dashed',
                 )}
                 title={
                   combatant
-                    ? `${combatant.name} (${combatant.hp}/${combatant.maxHp} HP)${combatant.isHidden ? ' [HIDDEN]' : ''}${isEnemyClickable ? ' — Click to target' : ''}${isAllyClickable ? ' — Click to target' : ''}`
+                    ? `${combatant.name} (${combatant.hp}/${combatant.maxHp} HP)${combatant.isHidden ? ' [HIDDEN]' : ''}${combat.isScoutPhase && !combatant.isPlayerChar ? ' [FROZEN]' : ''}${isEnemyClickable ? ' — Click to target' : ''}${isAllyClickable ? ' — Click to target' : ''}`
                     : isBlocked
                     ? 'Blocked'
                     : isMoveValid
@@ -144,6 +158,7 @@ export function CombatGrid({
             <span key={c.id} className={c.isPlayerChar ? 'text-blue-400' : 'text-red-400'}>
               {c.isPlayerChar ? `[${c.name.charAt(0)}]` : `{${c.name.charAt(0)}}`} {c.name}
               {c.isHidden ? ' (hidden)' : ''}
+              {combat.isScoutPhase && !c.isPlayerChar ? ' (frozen)' : ''}
               {c.hasMoved && c.hasActed ? ' \u2713' : ''}
             </span>
           ))}

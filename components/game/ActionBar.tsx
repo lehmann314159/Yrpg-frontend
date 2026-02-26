@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import {
   Eye, Moon, PackagePlus, Package, Wrench, Wand2,
   Swords, Footprints, ShieldHalf, EyeOff, SkipForward, X,
+  Radar, Users, LogOut,
 } from 'lucide-react';
 
 const iconMap: Record<string, React.ReactNode> = {
@@ -19,6 +20,9 @@ const iconMap: Record<string, React.ReactNode> = {
   ShieldHalf: <ShieldHalf className="h-3.5 w-3.5" />,
   EyeOff: <EyeOff className="h-3.5 w-3.5" />,
   SkipForward: <SkipForward className="h-3.5 w-3.5" />,
+  Radar: <Radar className="h-3.5 w-3.5" />,
+  Users: <Users className="h-3.5 w-3.5" />,
+  LogOut: <LogOut className="h-3.5 w-3.5" />,
 };
 
 const targetingColors: Record<string, string> = {
@@ -27,6 +31,7 @@ const targetingColors: Record<string, string> = {
   item: 'text-emerald-400 bg-emerald-950/40 border-emerald-800',
   trap: 'text-amber-400 bg-amber-950/40 border-amber-800',
   grid_cell: 'text-cyan-400 bg-cyan-950/40 border-cyan-800',
+  direction: 'text-violet-400 bg-violet-950/40 border-violet-800',
 };
 
 interface ActionBarProps {
