@@ -1,0 +1,71 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #0a0a0a;
+  --foreground: #e5e5e5;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+/* Theme palettes — applied to GameContainer via mood.palette */
+.theme-calm {
+  --theme-bg: theme('colors.stone.900');
+  --theme-border: theme('colors.stone.700');
+  --theme-accent: theme('colors.stone.400');
+}
+
+.theme-tense {
+  --theme-bg: theme('colors.stone.900');
+  --theme-border: theme('colors.amber.700');
+  --theme-accent: theme('colors.amber.400');
+}
+
+.theme-danger {
+  --theme-bg: theme('colors.stone.950');
+  --theme-border: theme('colors.red.700');
+  --theme-accent: theme('colors.red.400');
+}
+
+.theme-desperate {
+  --theme-bg: theme('colors.red.950');
+  --theme-border: theme('colors.red.600');
+  --theme-accent: theme('colors.red.300');
+}
+
+.theme-mystery {
+  --theme-bg: theme('colors.indigo.950');
+  --theme-border: theme('colors.indigo.700');
+  --theme-accent: theme('colors.indigo.400');
+}
+
+.theme-victory {
+  --theme-bg: theme('colors.emerald.950');
+  --theme-border: theme('colors.emerald.600');
+  --theme-accent: theme('colors.emerald.400');
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #444;
+  border-radius: 3px;
+}
+
+/* Combat grid cell hover */
+.combat-cell:hover {
+  outline: 2px solid rgba(255, 255, 255, 0.3);
+  outline-offset: -2px;
+}
