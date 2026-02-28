@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { cn } from '@/lib/utils';
 import type { GameEvent } from '@/lib/types';
 import { Skull, Swords, Sparkles, AlertTriangle, Trophy } from 'lucide-react';
@@ -28,14 +28,24 @@ const eventColors: Record<string, string> = {
 
 export function Notification({ event }: NotificationProps) {
   const [visible, setVisible] = useState(false);
+  const prevEventRef = useRef<GameEvent | null>(null);
+
+  // Detect new events by comparing turn number + event type + subtype
+  const isNewEvent =
+    event != null &&
+    (prevEventRef.current == null ||
+      event.turnNumber !== prevEventRef.current.turnNumber ||
+      event.eventType !== prevEventRef.current.eventType ||
+      event.eventSubtype !== prevEventRef.current.eventSubtype);
 
   useEffect(() => {
-    if (event) {
+    if (isNewEvent && event) {
+      prevEventRef.current = event;
       setVisible(true);
       const timer = setTimeout(() => setVisible(false), 4000);
       return () => clearTimeout(timer);
     }
-  }, [event]);
+  }, [isNewEvent, event]);
 
   if (!event || !visible) return null;
 

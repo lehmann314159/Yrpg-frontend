@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 import {
   Eye, Moon, PackagePlus, Package, Wrench, Wand2,
   Swords, Footprints, ShieldHalf, EyeOff, SkipForward, X,
-  Radar, Users, LogOut,
+  Radar, Users, LogOut, Backpack, ArrowUpFromLine,
 } from 'lucide-react';
 
 const iconMap: Record<string, React.ReactNode> = {
@@ -23,6 +23,8 @@ const iconMap: Record<string, React.ReactNode> = {
   Radar: <Radar className="h-3.5 w-3.5" />,
   Users: <Users className="h-3.5 w-3.5" />,
   LogOut: <LogOut className="h-3.5 w-3.5" />,
+  Backpack: <Backpack className="h-3.5 w-3.5" />,
+  ArrowUpFromLine: <ArrowUpFromLine className="h-3.5 w-3.5" />,
 };
 
 const targetingColors: Record<string, string> = {

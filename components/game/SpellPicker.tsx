@@ -15,7 +15,8 @@ interface SpellPickerProps {
 export function SpellPicker({ character, inCombat, onPickSpell, onClose }: SpellPickerProps) {
   const availableSpells = character.knownSpells.filter((id) => {
     const info = spellInfo[id];
-    if (!info) return false;
+    // Show unknown spells (from backend) — assume they work in any mode
+    if (!info) return true;
     if (info.combatOnly && !inCombat) return false;
     return true;
   });
@@ -43,7 +44,8 @@ export function SpellPicker({ character, inCombat, onPickSpell, onClose }: Spell
         )}
         {availableSpells.map((spellId) => {
           const info = spellInfo[spellId];
-          if (!info) return null;
+          const name = info?.name ?? spellId.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+          const desc = info?.desc ?? '';
           const noSlots = character.spellSlots <= 0;
 
           return (
@@ -58,9 +60,9 @@ export function SpellPicker({ character, inCombat, onPickSpell, onClose }: Spell
                   : 'text-indigo-200 hover:bg-indigo-900/40 cursor-pointer',
               )}
             >
-              <span className="font-medium">{info.name}</span>
+              <span className="font-medium">{name}</span>
               <span className={cn('text-[10px]', noSlots ? 'text-stone-700' : 'text-stone-400')}>
-                {info.desc}
+                {desc}
               </span>
             </button>
           );

@@ -36,6 +36,7 @@ export interface CharacterView {
   inventory: ItemView[];
   equippedWeapon: ItemView | null;
   equippedArmor: ItemView | null;
+  ac: number;
   isAlive: boolean;
   status: 'Healthy' | 'Wounded' | 'Critical' | 'Dead';
 }

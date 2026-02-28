@@ -106,12 +106,13 @@ export function CharacterCard({ character, compact, isCurrentTurn, isSelected, o
         </div>
       )}
 
-      {/* Stats (only if not compact) */}
-      {!compact && c.isAlive && (
+      {/* Stats */}
+      {c.isAlive && (
         <div className="flex gap-3 mt-1.5 text-[10px] text-stone-400">
           <span>STR {c.strength}</span>
           <span>DEX {c.dexterity}</span>
           <span>INT {c.intelligence}</span>
+          <span className="text-stone-500">AC {c.ac}</span>
         </div>
       )}
     </div>

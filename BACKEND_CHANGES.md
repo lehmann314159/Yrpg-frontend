@@ -162,6 +162,7 @@ interface CharacterView {
   spellSlots: number;              // NEW
   maxSpellSlots: number;           // NEW
   knownSpells: string[];           // NEW
+  ac: number;                      // NEW — effective AC: 10 + armor bonus + active buff bonuses
   isAlive: boolean;
   status: "Healthy" | "Wounded" | "Critical" | "Dead";
   inventory: ItemView[];           // NEW

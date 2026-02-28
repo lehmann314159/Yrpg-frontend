@@ -1,6 +1,6 @@
 'use client';
 
-import type { GameStateSnapshot } from '@/lib/types';
+import type { GameStateSnapshot, MapCell } from '@/lib/types';
 import { PartyPanel } from '@/components/game/PartyPanel';
 import { DungeonMap } from '@/components/game/DungeonMap';
 import { FormationPanel } from '@/components/game/FormationPanel';
@@ -8,11 +8,14 @@ import { InventoryPanel } from '@/components/game/InventoryPanel';
 
 interface SidebarProps {
   gameState: GameStateSnapshot | null;
+  mapGrid?: MapCell[][];
   selectedCharacterId?: string | null;
   onCharacterClick?: (characterId: string) => void;
+  onReorder?: (formation: string[]) => void;
+  formationDisabled?: boolean;
 }
 
-export function Sidebar({ gameState, selectedCharacterId, onCharacterClick }: SidebarProps) {
+export function Sidebar({ gameState, mapGrid, selectedCharacterId, onCharacterClick, onReorder, formationDisabled }: SidebarProps) {
   const selectedChar = selectedCharacterId
     ? gameState?.party?.characters.find((c) => c.id === selectedCharacterId) ?? null
     : null;
@@ -29,7 +32,7 @@ export function Sidebar({ gameState, selectedCharacterId, onCharacterClick }: Si
       </div>
 
       <div className="flex-1 p-3 space-y-4">
-        <DungeonMap grid={gameState?.mapGrid || []} />
+        <DungeonMap grid={mapGrid || []} />
 
         <PartyPanel
           party={gameState?.party || null}
@@ -38,7 +41,7 @@ export function Sidebar({ gameState, selectedCharacterId, onCharacterClick }: Si
           onCharacterClick={onCharacterClick}
         />
 
-        <FormationPanel party={gameState?.party || null} />
+        <FormationPanel party={gameState?.party || null} onReorder={onReorder} disabled={formationDisabled} />
 
         {/* Inventory for selected character */}
         {selectedChar && (

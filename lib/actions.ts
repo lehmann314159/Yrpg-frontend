@@ -10,12 +10,14 @@ export type TargetingMode =
   | 'trap'
   | 'grid_cell'
   | 'direction'
-  | 'spell_then_target';
+  | 'spell_then_target'
+  | 'item_then_use'
+  | 'item_then_equip';
 
 export interface PendingAction {
   toolName: string;
   args: Record<string, unknown>;
-  targeting: Exclude<TargetingMode, 'none' | 'spell_then_target'>;
+  targeting: Exclude<TargetingMode, 'none' | 'spell_then_target' | 'item_then_use' | 'item_then_equip'>;
   prompt: string;
   /** If true, target is {x, y} coordinates instead of entity ID */
   isCoordinateTarget?: boolean;
@@ -146,6 +148,30 @@ export function getAvailableActions(
       });
     }
 
+    // Use item (consumables/scrolls in inventory)
+    if (char.inventory.some((i) => i.type === 'consumable' || i.type === 'scroll')) {
+      actions.push({
+        id: 'use_item',
+        label: 'Use Item',
+        icon: 'Backpack',
+        toolName: 'use_item',
+        targeting: 'item_then_use',
+        needsCharacterId: true,
+      });
+    }
+
+    // Equip (unequipped weapons/armor in inventory)
+    if (char.inventory.some((i) => (i.type === 'weapon' || i.type === 'armor') && !i.isEquipped)) {
+      actions.push({
+        id: 'equip',
+        label: 'Equip',
+        icon: 'ArrowUpFromLine',
+        toolName: 'equip',
+        targeting: 'item_then_equip',
+        needsCharacterId: true,
+      });
+    }
+
     // Scout ahead (thief only, when no monsters in current room)
     if (char.class === 'thief' && (gs.monsters || []).length === 0) {
       actions.push({
@@ -246,7 +272,7 @@ export function getAvailableActions(
         id: 'cast_spell',
         label: 'Cast Spell',
         icon: 'Wand2',
-        toolName: 'cast_spell',
+        toolName: 'combat_cast_spell',
         targeting: 'spell_then_target',
         needsCharacterId: true,
       });
@@ -260,6 +286,18 @@ export function getAvailableActions(
         icon: 'EyeOff',
         toolName: 'combat_hide',
         targeting: 'none',
+        needsCharacterId: true,
+      });
+    }
+
+    // Use item in combat (consumables/scrolls, hasn't acted)
+    if (!combatant.hasActed && char.inventory.some((i) => i.type === 'consumable' || i.type === 'scroll')) {
+      actions.push({
+        id: 'use_item',
+        label: 'Use Item',
+        icon: 'Backpack',
+        toolName: 'combat_use_item',
+        targeting: 'item_then_use',
         needsCharacterId: true,
       });
     }
