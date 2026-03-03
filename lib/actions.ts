@@ -290,6 +290,20 @@ export function getAvailableActions(
       });
     }
 
+    // Disarm trap in combat (thief, hasn't acted)
+    if (char.class === 'thief' && !combatant.hasActed && (gs.roomTraps || []).some((t) => !t.isDisarmed && t.difficulty > 0)) {
+      actions.push({
+        id: 'disarm_trap',
+        label: 'Disarm Trap',
+        icon: 'Wrench',
+        toolName: 'disarm_trap',
+        targeting: 'trap',
+        targetPrompt: 'Select a trap to disarm',
+        needsCharacterId: true,
+        targetArgName: 'trap_id',
+      });
+    }
+
     // Use item in combat (consumables/scrolls, hasn't acted)
     if (!combatant.hasActed && char.inventory.some((i) => i.type === 'consumable' || i.type === 'scroll')) {
       actions.push({
