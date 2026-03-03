@@ -37,7 +37,7 @@ export function CombatGrid({
   const moveRange = selectedCombatant?.movementRange ?? 2;
   const inMoveRange = (x: number, y: number): boolean => {
     if (!isMoveTargeting || !selectedCombatant) return false;
-    const dist = Math.abs(x - selectedCombatant.gridX) + Math.abs(y - selectedCombatant.gridY);
+    const dist = Math.max(Math.abs(x - selectedCombatant.gridX), Math.abs(y - selectedCombatant.gridY));
     return dist > 0 && dist <= moveRange;
   };
 
