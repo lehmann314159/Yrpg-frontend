@@ -241,6 +241,32 @@ export function getAvailableActions(
       });
     }
 
+    // Charge (fighter, hasn't moved or acted — rush + attack)
+    if (char.class === 'fighter' && !combatant.hasMoved && !combatant.hasActed) {
+      actions.push({
+        id: 'charge',
+        label: 'Charge',
+        icon: 'Zap',
+        toolName: 'combat_charge',
+        targeting: 'enemy',
+        targetPrompt: 'Select an enemy to charge',
+        needsCharacterId: true,
+      });
+    }
+
+    // Protect (fighter, hasn't acted — guard an ally)
+    if (char.class === 'fighter' && !combatant.hasActed) {
+      actions.push({
+        id: 'protect',
+        label: 'Protect',
+        icon: 'ShieldPlus',
+        toolName: 'combat_protect',
+        targeting: 'ally',
+        targetPrompt: 'Select an ally to protect',
+        needsCharacterId: true,
+      });
+    }
+
     // Move (if hasn't moved)
     if (!combatant.hasMoved) {
       actions.push({

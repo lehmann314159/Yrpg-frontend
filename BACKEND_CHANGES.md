@@ -1,137 +1,40 @@
 # Backend Changes Summary
 
-Recent backend changes that require frontend updates. Grouped by feature.
+Recent backend changes that require frontend updates.
 
 ---
 
-## 1. Spell Slot System & Rest Mechanic
+## Fighter Abilities — Charge, Cleave, Protect
+
+Fighters now have three unique combat abilities: aggressive opener (charge), crowd control (cleave), and party defender (protect).
 
 ### New Tools
-- **`cast_spell`** — Cast a non-combat spell (heal, resurrect) during exploration
-- **`combat_cast_spell`** — Cast any known spell during combat
-- **`rest`** — Rest in a cleared room to recover HP and spell slots. 30%+ ambush chance.
+- **`combat_charge`** — Fighter rushes toward an enemy with double movement range (4 cells) and attacks with +2 bonus damage. Requires a fresh turn (no prior move or action). Combines move + attack into one action.
+  - Args: `character_id`, `target_id`
+  - Fighter-only. Returns error if target is out of double movement range.
+- **`combat_protect`** — Fighter guards an adjacent ally. Monster attacks targeting that ally are redirected to the fighter for 1 round.
+  - Args: `character_id` (fighter), `target_id` (ally to protect)
+  - Fighter-only. Must be adjacent to ally. Consumes action.
+
+### Passive Ability: Cleave
+When a fighter kills an enemy with a **melee** attack (via `combat_attack` or `combat_charge`), they automatically get one free attack on an adjacent enemy near the killed target's position. No chain-cleaving — only one cleave per kill.
 
 ### GameState Changes
-- `CharacterView` now includes:
-  - `spellSlots: number` — current available spell slots (0 for non-magic_user)
-  - `maxSpellSlots: number` — total spell slot capacity
-  - `knownSpells: string[]` — spell IDs the character knows (empty for non-magic_user)
+`CombatantView` now includes:
+- `protectedBy: string` — ID of the fighter protecting this combatant (empty string if not protected). Cleared at the start of each new round.
 
-### Available Spells
-| ID | Name | Combat Only | Effect |
-|----|------|-------------|--------|
-| `heal` | Heal | No | 2d6+4 HP to target |
-| `resurrect` | Resurrect | No | Revive dead party member at 50% HP |
-| `fireball` | Fireball | Yes | 3d6 damage + splash to adjacent enemies |
-| `lightning` | Lightning Bolt | Yes | 4d6 single target damage |
-| `shield` | Shield | Yes | +4 AC to all party for 3 rounds |
-| `sleep` | Sleep | Yes | Target skips 2 turns (damage wakes) |
+### Attack Result Changes
+When a monster attacks a protected target, the damage is redirected to the protector. The text output will be prefixed with "{Fighter} intercepts!" so the frontend can display the redirect.
 
-### Frontend TODO
-- [ ] Display spell slots on magic user characters (e.g. filled/empty circles)
-- [ ] Show known spells list with combat-only spells greyed out during exploration
-- [ ] Add UI for casting spells (target selection for heals/resurrect)
-- [ ] Add rest button/command when in a cleared room
-- [ ] Handle ambush combat starting from rest (surprise round for monsters)
+### Protection Mechanics
+- Protection lasts **1 round** (cleared when a new round starts in `AdvanceTurn`)
+- Protector must still be **alive** and **adjacent** to the ally when the attack happens for redirect to trigger
+- If protector dies from a redirected attack, subsequent attacks on the protected ally are no longer redirected
 
----
-
-## 2. Per-Character Inventory
-
-### GameState Changes
-- `CharacterView` now includes:
-  - `inventory: ItemView[]` — items in this character's personal inventory
-  - `equippedWeapon: ItemView | null` — currently equipped weapon
-  - `equippedArmor: ItemView | null` — currently equipped armor
-
-### Frontend TODO
-- [ ] Show per-character inventory in sidebar or character detail view
-- [ ] Display equipped weapon/armor on character cards
-- [ ] Support equip/unequip actions per character
-
----
-
-## 3. CombatantView Enhancements
-
-### GameState Changes
-`CombatantView` (inside `CombatView.combatants[]`) now includes:
-- `movementRange: number` — max cells this combatant can move per turn (Manhattan distance)
-- `attackRange: number` — max attack distance (Chebyshev distance)
-- `knownSpells?: string[]` — spell IDs for magic users (omitted for others)
-
-### Movement/Attack Range Values
-| Source | Movement | Attack |
-|--------|----------|--------|
-| Fighter | 2 | 1 (melee) or weapon range |
-| Magic User | 2 | 1 (melee) or weapon range |
-| Thief | 4 | 1 (melee) or weapon range |
-| All monsters | 2 | 1 (melee) or monster's range |
-
-### Frontend TODO
-- [ ] Use `movementRange` to highlight reachable cells on combat grid during a character's turn
-- [ ] Use `attackRange` to highlight targetable enemies
-- [ ] Show spell casting option for combatants with `knownSpells`
-
----
-
-## 4. Thief Scout Ahead & Signal Party
-
-### New Tools
-- **`scout_ahead`** (exploration) — Thief physically enters an adjacent room solo for a surprise round
-  - Args: `character_id`, `direction` (north/south/east/west)
-  - On sneak success: thief enters alone, hidden, with double movement (8 cells). Monsters are frozen.
-  - On sneak failure: whole party rushes in, normal combat begins.
-- **`signal_party`** (combat) — After surprise round, bring the rest of the party into combat
-  - Args: `character_id` (must be the scouting thief)
-  - Moves party to scout's room, re-rolls initiative, normal combat resumes.
-
-### Modified Tool
-- **`combat_retreat`** — New scout-phase behavior:
-  - Not engaged: automatic success, thief returns to previous room, combat ends
-  - Engaged: standard retreat roll. Failure auto-signals party to join.
-
-### GameState Changes
-`CombatView` now includes:
-- `awaitingScoutDecision: boolean` — true when thief must choose `signal_party` or `combat_retreat`
-- `isScoutPhase: boolean` — true during thief's surprise round (monsters frozen, double movement)
-
-During scout phase, the thief's `movementRange` in `CombatantView` is doubled to 8.
-
-### New Event Subtypes
-| Type | New Subtypes |
-|------|-------------|
-| `stealth` | `scout_ahead_success`, `scout_ahead_fail` |
-
-### Guard Clauses
-During `awaitingScoutDecision`, all combat actions except `signal_party` and `combat_retreat` are rejected with an error message.
-
-### Frontend TODO
-- [ ] Add scout_ahead action (thief-only, exploration mode, when adjacent room has enemies)
-- [ ] Show scout phase indicator when `isScoutPhase` is true (e.g. "Surprise Round" banner)
-- [ ] Show decision prompt when `awaitingScoutDecision` is true (signal_party or retreat)
-- [ ] Indicate frozen/inactive monsters during scout phase
-- [ ] Highlight thief's doubled movement range (8 cells) on combat grid during scout phase
-- [ ] Handle scout-phase retreat results (auto-success, auto-signal on failure)
-
----
-
-## Updated TypeScript Interfaces
-
-These reflect the current state of all types. See `API.md` for full details.
+### Updated TypeScript Interface
 
 ```typescript
-// New fields on CombatView
-interface CombatView {
-  grid: string[][];
-  combatants: CombatantView[];
-  currentTurnIdx: number;
-  roundNumber: number;
-  isActive: boolean;
-  awaitingScoutDecision: boolean;  // NEW
-  isScoutPhase: boolean;           // NEW
-}
-
-// New fields on CombatantView
+// Updated CombatantView
 interface CombatantView {
   id: string;
   name: string;
@@ -144,43 +47,18 @@ interface CombatantView {
   hasActed: boolean;
   isAlive: boolean;
   isHidden: boolean;
-  movementRange: number;           // NEW
-  attackRange: number;             // NEW
-  knownSpells?: string[];          // NEW (magic users only)
-}
-
-// New fields on CharacterView
-interface CharacterView {
-  id: string;
-  name: string;
-  class: "fighter" | "magic_user" | "thief";
-  hp: number;
-  maxHp: number;
-  strength: number;
-  dexterity: number;
-  intelligence: number;
-  spellSlots: number;              // NEW
-  maxSpellSlots: number;           // NEW
-  knownSpells: string[];           // NEW
-  ac: number;                      // NEW — effective AC: 10 + armor bonus + active buff bonuses
-  isAlive: boolean;
-  status: "Healthy" | "Wounded" | "Critical" | "Dead";
-  inventory: ItemView[];           // NEW
-  equippedWeapon: ItemView | null; // NEW
-  equippedArmor: ItemView | null;  // NEW
+  movementRange: number;
+  attackRange: number;
+  knownSpells?: string[];
+  protectedBy?: string;            // NEW — fighter ID protecting this combatant
 }
 ```
 
----
-
-## Full Tool Count
-
-The backend now has **24 MCP tools** (up from the original 18):
-
-| Category | Tools |
-|----------|-------|
-| Game Management | `new_game` |
-| Exploration | `look`, `move`, `take`, `equip`, `use_item`, `open_chest`, `disarm_trap`, `sneak`, `scout_ahead`, `inventory`, `stats`, `map` |
-| Persistence | `save_game`, `load_game` |
-| Spells & Rest | `cast_spell`, `rest` |
-| Combat | `combat_status`, `combat_move`, `combat_attack`, `combat_use_item`, `combat_defend`, `combat_hide`, `combat_cast_spell`, `combat_retreat`, `signal_party`, `end_turn` |
+### Frontend TODO
+- [ ] Add charge button/action for fighter characters during combat (enabled when `!hasMoved && !hasActed`)
+- [ ] Show charge range indicator on grid (double movement range = 4 cells from fighter)
+- [ ] Add protect button/action for fighter characters (enabled when `!hasActed`, target must be adjacent ally)
+- [ ] Display protection status on combatant cards (e.g. shield icon when `protectedBy` is set)
+- [ ] Draw a visual link between protector and protected ally on the combat grid
+- [ ] Show "Cleave!" in combat log when fighter gets a bonus attack after a kill
+- [ ] Show "{Fighter} intercepts!" in combat log when a protected ally's damage is redirected

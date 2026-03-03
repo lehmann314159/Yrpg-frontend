@@ -111,6 +111,7 @@ export interface CombatantView {
   movementRange: number;
   attackRange: number;
   knownSpells?: string[];
+  protectedBy?: string;
 }
 
 export interface MapCell {

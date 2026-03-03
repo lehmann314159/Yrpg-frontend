@@ -31,6 +31,7 @@ export function CombatGrid({
   const isMoveTargeting = pendingAction?.targeting === 'grid_cell';
   const isEnemyTargeting = pendingAction?.targeting === 'enemy';
   const isAllyTargeting = pendingAction?.targeting === 'ally';
+  const isChargeTargeting = pendingAction?.toolName === 'combat_charge';
 
   // For move targeting, compute which cells are in range
   const selectedCombatant = selectedCharacterId ? combatantMap.get(selectedCharacterId) : null;
@@ -40,6 +41,22 @@ export function CombatGrid({
     const dist = Math.max(Math.abs(x - selectedCombatant.gridX), Math.abs(y - selectedCombatant.gridY));
     return dist > 0 && dist <= moveRange;
   };
+
+  // For charge targeting, limit to 4-cell Chebyshev range
+  const inChargeRange = (combatant: { gridX: number; gridY: number }): boolean => {
+    if (!isChargeTargeting || !selectedCombatant) return true;
+    const dist = Math.max(Math.abs(combatant.gridX - selectedCombatant.gridX), Math.abs(combatant.gridY - selectedCombatant.gridY));
+    return dist <= 4;
+  };
+
+  // Build protectedBy lookup: combatant id → protector name
+  const protectedByName = new Map<string, string>();
+  for (const c of combat.combatants) {
+    if (c.protectedBy) {
+      const protector = combatantMap.get(c.protectedBy);
+      protectedByName.set(c.id, protector?.name ?? c.protectedBy);
+    }
+  }
 
   return (
     <div>
@@ -79,9 +96,12 @@ export function CombatGrid({
             // Click logic
             const isEmpty = !isBlocked && !combatant;
             const isMoveValid = isMoveTargeting && isEmpty && inMoveRange(x, y);
-            const isEnemyClickable = isEnemyTargeting && combatant && !combatant.isPlayerChar && combatant.isAlive;
+            const isEnemyInRange = combatant ? inChargeRange(combatant) : true;
+            const isEnemyClickable = isEnemyTargeting && combatant && !combatant.isPlayerChar && combatant.isAlive && isEnemyInRange;
             const isAllyClickable = isAllyTargeting && combatant && combatant.isPlayerChar && combatant.isAlive;
             const isClickable = isMoveValid || isEnemyClickable || isAllyClickable;
+            const isProtected = combatant && protectedByName.has(combatant.id);
+            const isEnemyOutOfChargeRange = isChargeTargeting && combatant && !combatant.isPlayerChar && combatant.isAlive && !isEnemyInRange;
 
             const handleClick = () => {
               if (isMoveValid && onCellClick) {
@@ -114,11 +134,15 @@ export function CombatGrid({
                   combatant && !combatant.isAlive && 'opacity-30',
                   // Frozen monsters during scout phase
                   combat.isScoutPhase && combatant && !combatant.isPlayerChar && combatant.isAlive && 'opacity-50 grayscale',
+                  // Protected combatant ring (lower priority than targeting rings)
+                  isProtected && !isEnemyClickable && !isAllyClickable && !isCurrentTurn && 'ring-2 ring-green-500',
+                  // Dim out-of-range enemies during charge targeting
+                  isEnemyOutOfChargeRange && 'opacity-40',
                   combatant?.isHidden && 'border-dashed',
                 )}
                 title={
                   combatant
-                    ? `${combatant.name} (${combatant.hp}/${combatant.maxHp} HP)${combatant.isHidden ? ' [HIDDEN]' : ''}${combat.isScoutPhase && !combatant.isPlayerChar ? ' [FROZEN]' : ''}${isEnemyClickable ? ' — Click to target' : ''}${isAllyClickable ? ' — Click to target' : ''}`
+                    ? `${combatant.name} (${combatant.hp}/${combatant.maxHp} HP)${combatant.isHidden ? ' [HIDDEN]' : ''}${protectedByName.has(combatant.id) ? ` [PROTECTED by ${protectedByName.get(combatant.id)}]` : ''}${combat.isScoutPhase && !combatant.isPlayerChar ? ' [FROZEN]' : ''}${isEnemyClickable ? ' — Click to target' : ''}${isAllyClickable ? ' — Click to target' : ''}`
                     : isBlocked
                     ? 'Blocked'
                     : isMoveValid
@@ -137,6 +161,9 @@ export function CombatGrid({
                       {combatant.isPlayerChar
                         ? `[${combatant.name.charAt(0)}]`
                         : `{${combatant.name.charAt(0)}}`}
+                      {protectedByName.has(combatant.id) && (
+                        <span className="text-green-400 ml-0.5" title="Protected">&#x1F6E1;</span>
+                      )}
                     </span>
                     <span className="text-[8px] text-stone-400">
                       {combatant.hp}/{combatant.maxHp}
@@ -158,6 +185,7 @@ export function CombatGrid({
             <span key={c.id} className={c.isPlayerChar ? 'text-blue-400' : 'text-red-400'}>
               {c.isPlayerChar ? `[${c.name.charAt(0)}]` : `{${c.name.charAt(0)}}`} {c.name}
               {c.isHidden ? ' (hidden)' : ''}
+              {protectedByName.has(c.id) ? ' (protected)' : ''}
               {combat.isScoutPhase && !c.isPlayerChar ? ' (frozen)' : ''}
               {c.hasMoved && c.hasActed ? ' \u2713' : ''}
             </span>
