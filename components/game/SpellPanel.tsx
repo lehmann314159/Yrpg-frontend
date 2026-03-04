@@ -41,7 +41,7 @@ export function SpellPanel({ character, inCombat }: SpellPanelProps) {
       </div>
 
       <div className="space-y-1">
-        {character.knownSpells.map((spellId) => {
+        {(character.knownSpells ?? []).map((spellId) => {
           const info = spellInfo[spellId];
           if (!info) return null;
           const disabled = info.combatOnly && !inCombat;

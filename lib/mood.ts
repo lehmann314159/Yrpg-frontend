@@ -1,6 +1,6 @@
 import type { GameStateSnapshot, Mood, MonsterView, PartyView } from './types';
 
-function avgPartyHealth(party: PartyView | null): number {
+function avgPartyHealth(party: PartyView | null | undefined): number {
   if (!party || party.characters.length === 0) return 1;
   const alive = party.characters.filter(c => c.isAlive);
   if (alive.length === 0) return 0;

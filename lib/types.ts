@@ -2,18 +2,18 @@
 
 export interface GameStateSnapshot {
   mode: 'exploration' | 'combat';
-  party: PartyView | null;
-  currentRoom: RoomView | null;
-  monsters: MonsterView[];
-  roomItems: ItemView[];
-  roomTraps: TrapView[];
-  combat: CombatView | null;
-  mapGrid: MapCell[][];
+  party?: PartyView;
+  currentRoom?: RoomView;
+  monsters?: MonsterView[];
+  roomItems?: ItemView[];
+  roomTraps?: TrapView[];
+  combat?: CombatView;
+  mapGrid?: MapCell[][];
   gameOver: boolean;
   victory: boolean;
   turnNumber: number;
-  message: string;
-  lastEvent: GameEvent | null;
+  message?: string;
+  lastEvent?: GameEvent;
 }
 
 export interface PartyView {
@@ -32,10 +32,8 @@ export interface CharacterView {
   intelligence: number;
   spellSlots: number;
   maxSpellSlots: number;
-  knownSpells: string[];
+  knownSpells?: string[];
   inventory: ItemView[];
-  equippedWeapon: ItemView | null;
-  equippedArmor: ItemView | null;
   ac: number;
   isAlive: boolean;
   status: 'Healthy' | 'Wounded' | 'Critical' | 'Dead';
@@ -82,7 +80,10 @@ export interface ItemView {
 export interface TrapView {
   id: string;
   description: string;
+  location: 'room' | 'chest';
+  isTriggered: boolean;
   isDisarmed: boolean;
+  isOpened: boolean;
   difficulty: number;
 }
 
@@ -124,14 +125,14 @@ export interface MapCell {
 }
 
 export interface GameEvent {
-  sessionId: string;
-  turnNumber: number;
-  eventType: string;
-  eventSubtype: string;
-  actorId: string;
-  actorClass: string;
-  targetId: string;
-  roomId: string;
+  session_id: string;
+  turn_number: number;
+  event_type: string;
+  event_subtype: string;
+  actor_id: string;
+  actor_class: string;
+  target_id: string;
+  room_id: string;
   details: EventDetails;
 }
 
@@ -139,19 +140,19 @@ export interface EventDetails {
   roll?: number;
   dc?: number;
   damage?: number;
-  wasCritical?: boolean;
-  wasFlanking?: boolean;
-  weaponUsed?: string;
-  partyHp?: Record<string, number>;
-  partyAlive?: number;
-  actorPos?: { x: number; y: number };
-  targetPos?: { x: number; y: number };
-  itemName?: string;
-  scrollEffect?: string;
+  was_critical?: boolean;
+  was_flanking?: boolean;
+  weapon_used?: string;
+  party_hp?: Record<string, number>;
+  party_alive?: number;
+  actor_pos?: { x: number; y: number };
+  target_pos?: { x: number; y: number };
+  item_name?: string;
+  scroll_effect?: string;
   success?: boolean;
-  trapDifficulty?: number;
-  wasDetected?: boolean;
-  resultText?: string;
+  trap_difficulty?: number;
+  was_detected?: boolean;
+  result_text?: string;
 }
 
 export interface Mood {

@@ -2,11 +2,11 @@
 
 import type { CharacterView, ItemView } from '@/lib/types';
 import { cn } from '@/lib/utils';
-import { Backpack, ArrowUpFromLine, X } from 'lucide-react';
+import { Backpack, ArrowUpFromLine, PackageMinus, HandHelping, X } from 'lucide-react';
 
 interface ItemPickerProps {
   character: CharacterView;
-  mode: 'use' | 'equip';
+  mode: 'use' | 'equip' | 'drop' | 'give';
   inCombat: boolean;
   onPickItem: (itemId: string) => void;
   onClose: () => void;
@@ -23,11 +23,14 @@ export function ItemPicker({ character, mode, onPickItem, onClose }: ItemPickerP
   const items = character.inventory.filter((item) => {
     if (mode === 'use') return item.type === 'consumable' || item.type === 'scroll';
     if (mode === 'equip') return (item.type === 'weapon' || item.type === 'armor') && !item.isEquipped;
+    if (mode === 'drop' || mode === 'give') return true;
     return false;
   });
 
-  const Icon = mode === 'use' ? Backpack : ArrowUpFromLine;
-  const title = mode === 'use' ? 'Use Item' : 'Equip';
+  const iconMap = { use: Backpack, equip: ArrowUpFromLine, drop: PackageMinus, give: HandHelping };
+  const titleMap = { use: 'Use Item', equip: 'Equip', drop: 'Drop Item', give: 'Give Item' };
+  const Icon = iconMap[mode];
+  const title = titleMap[mode];
 
   return (
     <div className="rounded-lg border border-amber-800 bg-amber-950/40 p-3">

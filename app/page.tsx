@@ -39,7 +39,7 @@ export default function GamePage() {
   const [selectedCharacterId, setSelectedCharacterId] = useState<string | null>(null);
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
   const [showSpellPicker, setShowSpellPicker] = useState(false);
-  const [showItemPicker, setShowItemPicker] = useState<'use' | 'equip' | null>(null);
+  const [showItemPicker, setShowItemPicker] = useState<'use' | 'equip' | 'drop' | 'give' | null>(null);
 
   // Auto-select character when gameState changes
   useEffect(() => {
@@ -208,6 +208,10 @@ export default function GamePage() {
         setShowItemPicker('use');
       } else if (action.targeting === 'item_then_equip') {
         setShowItemPicker('equip');
+      } else if (action.targeting === 'item_then_drop') {
+        setShowItemPicker('drop');
+      } else if (action.targeting === 'item_then_ally') {
+        setShowItemPicker('give');
       } else {
         // Enter targeting mode
         setPendingAction({
@@ -280,6 +284,16 @@ export default function GamePage() {
         }
       } else if (showItemPicker === 'equip') {
         executeAction('equip', { character_id: selectedCharacterId, item_id: itemId });
+      } else if (showItemPicker === 'drop') {
+        executeAction('drop_item', { character_id: selectedCharacterId, item_id: itemId });
+      } else if (showItemPicker === 'give') {
+        setPendingAction({
+          toolName: 'give_item',
+          args: { character_id: selectedCharacterId, item_id: itemId },
+          targeting: 'ally',
+          prompt: 'Select an ally to give the item to',
+          targetArgName: 'target_character_id',
+        });
       }
     },
     [showItemPicker, selectedCharacterId, executeAction, gameState?.mode, gameState?.party?.characters]
@@ -321,6 +335,12 @@ export default function GamePage() {
       const char = gameState?.party?.characters.find((c) => c.id === charId);
       if (!char?.isAlive) return;
 
+      // If ally targeting is active, select the target instead of switching characters
+      if (pendingAction?.targeting === 'ally') {
+        handleTargetSelect(charId);
+        return;
+      }
+
       // In combat, only allow selecting the current turn character
       if (gameState?.mode === 'combat' && gameState.combat?.isActive) {
         const current = gameState.combat.combatants[gameState.combat.currentTurnIdx];
@@ -333,7 +353,7 @@ export default function GamePage() {
       setShowSpellPicker(false);
       setShowItemPicker(null);
     },
-    [gameState]
+    [gameState, pendingAction, handleTargetSelect]
   );
 
   // Exit click — also handles direction targeting (scout_ahead, sneak)

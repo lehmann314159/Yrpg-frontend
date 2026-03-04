@@ -12,12 +12,14 @@ export type TargetingMode =
   | 'direction'
   | 'spell_then_target'
   | 'item_then_use'
-  | 'item_then_equip';
+  | 'item_then_equip'
+  | 'item_then_drop'
+  | 'item_then_ally';
 
 export interface PendingAction {
   toolName: string;
   args: Record<string, unknown>;
-  targeting: Exclude<TargetingMode, 'none' | 'spell_then_target' | 'item_then_use' | 'item_then_equip'>;
+  targeting: Exclude<TargetingMode, 'none' | 'spell_then_target' | 'item_then_use' | 'item_then_equip' | 'item_then_drop' | 'item_then_ally'>;
   prompt: string;
   /** If true, target is {x, y} coordinates instead of entity ID */
   isCoordinateTarget?: boolean;
@@ -172,6 +174,31 @@ export function getAvailableActions(
       });
     }
 
+    // Drop item (any character with inventory)
+    if (char.inventory.length > 0) {
+      actions.push({
+        id: 'drop_item',
+        label: 'Drop',
+        icon: 'PackageMinus',
+        toolName: 'drop_item',
+        targeting: 'item_then_drop',
+        needsCharacterId: true,
+      });
+    }
+
+    // Give item (multi-character party, character has items)
+    if (char.inventory.length > 0 && (gs.party?.characters.filter((c) => c.isAlive).length ?? 0) > 1) {
+      actions.push({
+        id: 'give_item',
+        label: 'Give',
+        icon: 'HandHelping',
+        toolName: 'give_item',
+        targeting: 'item_then_ally',
+        needsCharacterId: true,
+        targetArgName: 'target_character_id',
+      });
+    }
+
     // Scout ahead (thief only, when no monsters in current room)
     if (char.class === 'thief' && (gs.monsters || []).length === 0) {
       actions.push({
@@ -207,7 +234,7 @@ export function getAvailableActions(
     const combatant = getCombatant(gs, selectedCharId);
     if (!combatant) return [];
 
-    // Scout decision phase — only signal_party or retreat
+    // Scout decision phase — signal_party, retreat, or disarm_trap
     if (gs.combat.awaitingScoutDecision) {
       actions.push({
         id: 'signal_party',
@@ -225,6 +252,21 @@ export function getAvailableActions(
         targeting: 'none',
         needsCharacterId: true,
       });
+
+      // Thief can disarm traps during scout phase
+      if (char.class === 'thief' && !combatant.hasActed && (gs.roomTraps || []).some((t) => !t.isDisarmed && t.difficulty > 0)) {
+        actions.push({
+          id: 'disarm_trap',
+          label: 'Disarm Trap',
+          icon: 'Wrench',
+          toolName: 'disarm_trap',
+          targeting: 'trap',
+          targetPrompt: 'Select a trap to disarm',
+          needsCharacterId: true,
+          targetArgName: 'trap_id',
+        });
+      }
+
       return actions;
     }
 
@@ -300,6 +342,19 @@ export function getAvailableActions(
         icon: 'Wand2',
         toolName: 'combat_cast_spell',
         targeting: 'spell_then_target',
+        needsCharacterId: true,
+      });
+    }
+
+    // Cantrip (magic user, hasn't acted — free ranged attack, no spell slot cost)
+    if (char.class === 'magic_user' && !combatant.hasActed) {
+      actions.push({
+        id: 'cantrip',
+        label: 'Cantrip',
+        icon: 'Sparkles',
+        toolName: 'combat_cantrip',
+        targeting: 'enemy',
+        targetPrompt: 'Select an enemy to target with arcane bolt',
         needsCharacterId: true,
       });
     }

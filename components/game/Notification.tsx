@@ -34,9 +34,9 @@ export function Notification({ event }: NotificationProps) {
   const isNewEvent =
     event != null &&
     (prevEventRef.current == null ||
-      event.turnNumber !== prevEventRef.current.turnNumber ||
-      event.eventType !== prevEventRef.current.eventType ||
-      event.eventSubtype !== prevEventRef.current.eventSubtype);
+      event.turn_number !== prevEventRef.current.turn_number ||
+      event.event_type !== prevEventRef.current.event_type ||
+      event.event_subtype !== prevEventRef.current.event_subtype);
 
   useEffect(() => {
     if (isNewEvent && event) {
@@ -49,11 +49,11 @@ export function Notification({ event }: NotificationProps) {
 
   if (!event || !visible) return null;
 
-  const resultText = event.details?.resultText;
+  const resultText = event.details?.result_text;
   if (!resultText) return null;
 
-  const icon = eventIcons[event.eventType] || null;
-  const color = eventColors[event.eventType] || eventColors.default;
+  const icon = eventIcons[event.event_type] || null;
+  const color = eventColors[event.event_type] || eventColors.default;
 
   return (
     <div
@@ -65,7 +65,7 @@ export function Notification({ event }: NotificationProps) {
     >
       {icon}
       <span className="text-sm font-medium">{resultText}</span>
-      {event.details?.wasCritical && (
+      {event.details?.was_critical && (
         <span className="text-xs font-bold text-amber-400 uppercase">CRITICAL!</span>
       )}
     </div>

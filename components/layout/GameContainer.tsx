@@ -93,7 +93,7 @@ export function GameContainer({
   return (
     <div className={cn('flex-1 overflow-y-auto p-4 space-y-4', mood.palette)}>
       {/* Notification */}
-      <Notification event={gs.lastEvent} />
+      <Notification event={gs.lastEvent ?? null} />
 
       {/* Room header */}
       {gs.currentRoom && (
@@ -146,7 +146,7 @@ export function GameContainer({
       {gs.mode === 'combat' && gs.combat && (
         <CombatGrid
           combat={gs.combat}
-          party={gs.party}
+          party={gs.party || null}
           mood={mood}
           pendingAction={pendingAction}
           selectedCharacterId={selectedCharacterId}

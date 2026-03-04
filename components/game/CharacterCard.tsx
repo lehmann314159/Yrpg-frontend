@@ -90,19 +90,19 @@ export function CharacterCard({ character, compact, isCurrentTurn, isSelected, o
         </div>
       )}
 
-      {/* Equipped items */}
-      {c.isAlive && (c.equippedWeapon || c.equippedArmor) && (
+      {/* Equipped items (derived from inventory) */}
+      {c.isAlive && c.inventory.some((i) => i.isEquipped) && (
         <div className="flex gap-3 mt-1.5 text-[10px] text-stone-400">
-          {c.equippedWeapon && (
-            <span className="flex items-center gap-0.5">
-              <Sword className="h-2.5 w-2.5" /> {c.equippedWeapon.name}
+          {c.inventory.filter((i) => i.isEquipped && i.type === 'weapon').map((w) => (
+            <span key={w.id} className="flex items-center gap-0.5">
+              <Sword className="h-2.5 w-2.5" /> {w.name}
             </span>
-          )}
-          {c.equippedArmor && (
-            <span className="flex items-center gap-0.5">
-              <ShieldHalf className="h-2.5 w-2.5" /> {c.equippedArmor.name}
+          ))}
+          {c.inventory.filter((i) => i.isEquipped && i.type === 'armor').map((a) => (
+            <span key={a.id} className="flex items-center gap-0.5">
+              <ShieldHalf className="h-2.5 w-2.5" /> {a.name}
             </span>
-          )}
+          ))}
         </div>
       )}
 

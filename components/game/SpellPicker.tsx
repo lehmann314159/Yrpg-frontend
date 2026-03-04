@@ -13,7 +13,7 @@ interface SpellPickerProps {
 }
 
 export function SpellPicker({ character, inCombat, onPickSpell, onClose }: SpellPickerProps) {
-  const availableSpells = character.knownSpells.filter((id) => {
+  const availableSpells = (character.knownSpells ?? []).filter((id) => {
     const info = spellInfo[id];
     // Show unknown spells (from backend) — assume they work in any mode
     if (!info) return true;
