@@ -46,6 +46,11 @@ export function parseCommand(input: string): ParsedCommand {
     return { name: 'inventory', arguments: {} };
   }
 
+  // Take / grab item
+  if (first === 'take' || first === 'grab' || first === 'pickup' || first === 'pick') {
+    return { name: 'take', arguments: { raw: words.slice(1).join(' ') } };
+  }
+
   // Rest
   if (first === 'rest' || first === 'sleep' || first === 'camp') {
     return { name: 'rest', arguments: {} };
@@ -72,6 +77,11 @@ export function parseCommand(input: string): ParsedCommand {
   }
   if (first === 'load') {
     return { name: 'load_game', arguments: { session_id: words[1] || '' } };
+  }
+
+  // "use <item>" — map to use_item so it triggers AI interpretation with correct tool name
+  if (first === 'use') {
+    return { name: 'use_item', arguments: { raw: words.slice(1).join(' ') } };
   }
 
   // For commands with IDs (attack, take, equip, etc.), pass through as raw MCP
