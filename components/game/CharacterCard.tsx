@@ -4,7 +4,7 @@ import type { CharacterView } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { Shield, Wand2, Eye, Sword, ShieldHalf } from 'lucide-react';
+import { Shield, Wand2, Eye, Sword, ShieldHalf, ChevronUp, ChevronDown } from 'lucide-react';
 
 const classIcons: Record<CharacterView['class'], React.ReactNode> = {
   fighter: <Shield className="h-3.5 w-3.5" />,
@@ -37,10 +37,14 @@ interface CharacterCardProps {
   compact?: boolean;
   isCurrentTurn?: boolean;
   isSelected?: boolean;
+  isFirst?: boolean;
+  isLast?: boolean;
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
   onClick?: () => void;
 }
 
-export function CharacterCard({ character, compact, isCurrentTurn, isSelected, onClick }: CharacterCardProps) {
+export function CharacterCard({ character, compact, isCurrentTurn, isSelected, isFirst, isLast, onMoveUp, onMoveDown, onClick }: CharacterCardProps) {
   const c = character;
 
   return (
@@ -64,6 +68,32 @@ export function CharacterCard({ character, compact, isCurrentTurn, isSelected, o
             {c.status}
           </Badge>
           <span className="text-xs text-stone-400">{classLabels[c.class]}</span>
+          {(onMoveUp || onMoveDown) && (
+            <span className="flex flex-col ml-0.5">
+              <button
+                onClick={(e) => { e.stopPropagation(); onMoveUp?.(); }}
+                disabled={isFirst}
+                className={cn(
+                  'p-0 transition-colors',
+                  isFirst ? 'text-stone-800 cursor-default' : 'text-stone-500 hover:text-stone-200',
+                )}
+                title="Move forward in formation"
+              >
+                <ChevronUp className="h-3 w-3" />
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); onMoveDown?.(); }}
+                disabled={isLast}
+                className={cn(
+                  'p-0 transition-colors',
+                  isLast ? 'text-stone-800 cursor-default' : 'text-stone-500 hover:text-stone-200',
+                )}
+                title="Move back in formation"
+              >
+                <ChevronDown className="h-3 w-3" />
+              </button>
+            </span>
+          )}
         </div>
       </div>
 

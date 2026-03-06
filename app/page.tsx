@@ -4,16 +4,18 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { GameContainer } from '@/components/layout/GameContainer';
 import { NarrativePanel } from '@/components/game/NarrativePanel';
+import { SceneImage } from '@/components/game/SceneImage';
 import { ActionBar } from '@/components/game/ActionBar';
 import { SpellPicker } from '@/components/game/SpellPicker';
 import { ItemPicker } from '@/components/game/ItemPicker';
+import { ExitButtons } from '@/components/game/ExitButtons';
 import { deriveMood } from '@/lib/mood';
 import { parseCommand } from '@/lib/command-parser';
-import { parseMoodOverride } from '@/lib/llm-client';
-import { sendCommand } from './actions';
+import { sendCommand, generateUI } from './actions';
 import { getAvailableActions, getAutoSelectedCharacter, spellInfo } from '@/lib/actions';
 import type { GameStateSnapshot, MapCell, Mood } from '@/lib/types';
 import type { ActionDefinition, PendingAction, TargetingMode } from '@/lib/actions';
+import type { UIGenerationResult } from '@/lib/ui-types';
 import { accumulateRoom, buildMapGrid, type AccumulatedRoom } from '@/lib/map-accumulator';
 import { cn } from '@/lib/utils';
 import { moodThemes } from '@/lib/mood';
@@ -23,13 +25,21 @@ export default function GamePage() {
   const [gameState, setGameState] = useState<GameStateSnapshot | null>(null);
   const [mood, setMood] = useState<Mood>(deriveMood(null));
   const [narrative, setNarrative] = useState('');
-  const [isStreaming, setIsStreaming] = useState(false);
+  const [sceneImage, setSceneImage] = useState<string | null>(null);
+  const [scenePrompt, setScenePrompt] = useState<string | null>(null);
+  const [isImageLoading, setIsImageLoading] = useState(false);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [combatLog, setCombatLog] = useState<string[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
-  const narrativeAbortRef = useRef<AbortController | null>(null);
+  const [uiResult, setUiResult] = useState<UIGenerationResult | null>(null);
+
+  // Generation counter to discard stale generateUI results
+  const uiGenerationRef = useRef(0);
+
+  // Image cache: room ID → base64 data URL
+  const imageCacheRef = useRef<Map<string, string>>(new Map());
 
   // Map accumulator state
   const accumulatedRoomsRef = useRef<Map<string, AccumulatedRoom>>(new Map());
@@ -72,6 +82,7 @@ export default function GamePage() {
       // Reset on new game (turn 1 or unknown room means fresh dungeon)
       if (gameState.turnNumber === 1 || !accumulatedRoomsRef.current.has(gameState.currentRoom.id) && accumulatedRoomsRef.current.size > 0 && gameState.currentRoom.isEntrance) {
         accumulatedRoomsRef.current = new Map();
+        imageCacheRef.current = new Map();
         setCombatLog([]);
       }
       accumulateRoom(accumulatedRoomsRef.current, gameState.currentRoom);
@@ -83,65 +94,6 @@ export default function GamePage() {
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
-
-  // Stream narrative from LLM (client-side)
-  const streamNarrative = useCallback(
-    async (backendText: string, gs: GameStateSnapshot) => {
-      // Cancel any in-flight narrative stream
-      narrativeAbortRef.current?.abort();
-      const abort = new AbortController();
-      narrativeAbortRef.current = abort;
-
-      setIsStreaming(true);
-      setNarrative(backendText);
-
-      try {
-        const response = await fetch('/api/narrative', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ backendText, gameState: gs }),
-          signal: abort.signal,
-        });
-
-        if (!response.ok || !response.body) {
-          setIsStreaming(false);
-          return;
-        }
-
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let aiNarrative = '';
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          const chunk = decoder.decode(value, { stream: true });
-          aiNarrative += chunk;
-          if (!abort.signal.aborted) {
-            setNarrative(aiNarrative);
-          }
-        }
-
-        if (!abort.signal.aborted) {
-          const override = parseMoodOverride(aiNarrative);
-          if (override?.atmosphere) {
-            setMood((prev) => ({
-              ...prev,
-              atmosphere: override.atmosphere as Mood['atmosphere'],
-              palette: `theme-${override.atmosphere === 'dangerous' ? 'danger' : override.atmosphere === 'mysterious' ? 'mystery' : override.atmosphere === 'triumphant' ? 'victory' : override.atmosphere}`,
-            }));
-          }
-        }
-      } catch {
-        // LLM unavailable or aborted — keep backend text
-      }
-
-      if (!abort.signal.aborted) {
-        setIsStreaming(false);
-      }
-    },
-    []
-  );
 
   // Core action executor — shared by click actions and text input
   const executeAction = useCallback(
@@ -166,7 +118,35 @@ export default function GamePage() {
             setCombatLog((prev) => [...prev.slice(-19), result.backendText]);
           }
 
-          streamNarrative(result.backendText, result.gameState);
+          // Phase 1: show backend text immediately
+          const generation = ++uiGenerationRef.current;
+          setNarrative(result.backendText);
+          setUiResult(null);
+
+          // Phase 2: AI-driven UI generation — DISABLED for fast iteration
+          // if (result.gameState.mode !== 'combat') {
+          //   const roomId = result.gameState.currentRoom?.id;
+          //   if (roomId && imageCacheRef.current.has(roomId)) {
+          //     setSceneImage(imageCacheRef.current.get(roomId)!);
+          //   } else {
+          //     setIsImageLoading(true);
+          //   }
+          //   generateUI(result.backendText, result.gameState, result.mood)
+          //     .then((ui) => {
+          //       if (uiGenerationRef.current !== generation) return;
+          //       setUiResult(ui);
+          //       if (ui.imageUrl) {
+          //         if (roomId) imageCacheRef.current.set(roomId, ui.imageUrl);
+          //         setSceneImage(ui.imageUrl);
+          //         setScenePrompt(ui.imagePrompt ?? null);
+          //       }
+          //       setIsImageLoading(false);
+          //     })
+          //     .catch(() => {
+          //       if (uiGenerationRef.current !== generation) return;
+          //       setIsImageLoading(false);
+          //     });
+          // }
         }
       } catch {
         setError('An unexpected error occurred.');
@@ -174,7 +154,28 @@ export default function GamePage() {
 
       setLoading(false);
     },
-    [streamNarrative]
+    []
+  );
+
+  // Resolve raw text args to actual IDs using game state
+  const resolveRawArgs = useCallback(
+    (toolName: string, raw: string, gs: GameStateSnapshot): Record<string, unknown> | null => {
+      const text = raw.toLowerCase().replace(/^the\s+/, '');
+      const charId = selectedCharacterId;
+
+      if (toolName === 'take') {
+        const item = gs.roomItems?.find((i) => i.name.toLowerCase().includes(text));
+        if (item && charId) return { character_id: charId, item_id: item.id };
+      } else if (toolName === 'use_item' || toolName === 'combat_use_item') {
+        const char = gs.party?.characters.find((c) => c.id === charId);
+        const item = char?.inventory.find((i) =>
+          (i.type === 'consumable' || i.type === 'scroll') && i.name.toLowerCase().includes(text)
+        );
+        if (item && charId) return { character_id: charId, item_id: item.id };
+      }
+      return null;
+    },
+    [selectedCharacterId]
   );
 
   // Text input handler
@@ -184,8 +185,21 @@ export default function GamePage() {
 
     setInput('');
     const parsed = parseCommand(command);
+
+    // If parseCommand returned raw args, try to resolve them client-side
+    if ('raw' in parsed.arguments && gameState) {
+      const resolved = resolveRawArgs(parsed.name, parsed.arguments.raw as string, gameState);
+      if (resolved) {
+        await executeAction(parsed.name, resolved);
+        return;
+      }
+
+      setError("Couldn't understand that command. Try using the action buttons.");
+      return;
+    }
+
     await executeAction(parsed.name, parsed.arguments);
-  }, [input, loading, executeAction]);
+  }, [input, loading, executeAction, gameState, resolveRawArgs]);
 
   // Action bar click handler
   const handleActionClick = useCallback(
@@ -272,13 +286,20 @@ export default function GamePage() {
         const item = selectedChar?.inventory.find((i) => i.id === itemId);
 
         if (item?.type === 'scroll') {
-          const targeting: 'ally' | 'enemy' = item.healing != null && item.healing > 0 ? 'ally' : 'enemy';
-          setPendingAction({
-            toolName,
-            args: { character_id: selectedCharacterId, item_id: itemId },
-            targeting,
-            prompt: `Select ${targeting === 'ally' ? 'an ally' : 'an enemy'} for ${item.name}`,
-          });
+          const isHeal = item.healing != null && item.healing > 0;
+          const isDamage = item.damage != null && item.damage > 0;
+          if (!isHeal && !isDamage) {
+            // Self-buff scroll (e.g. Shield) — no target needed
+            executeAction(toolName, { character_id: selectedCharacterId, item_id: itemId });
+          } else {
+            const targeting: 'ally' | 'enemy' = isHeal ? 'ally' : 'enemy';
+            setPendingAction({
+              toolName,
+              args: { character_id: selectedCharacterId, item_id: itemId },
+              targeting,
+              prompt: `Select ${targeting === 'ally' ? 'an ally' : 'an enemy'} for ${item.name}`,
+            });
+          }
         } else {
           executeAction(toolName, { character_id: selectedCharacterId, item_id: itemId });
         }
@@ -413,9 +434,12 @@ export default function GamePage() {
       />
 
       <main className="flex-1 flex flex-col min-w-0">
-        {/* Narrative panel */}
-        <div className="p-4 pb-0">
-          <NarrativePanel text={narrative} mood={mood} isStreaming={isStreaming} />
+        {/* Scene image (exploration only) + Narrative panel */}
+        <div className="p-4 pb-0 space-y-3">
+          {gameState?.mode !== 'combat' && (
+            <SceneImage imageUrl={sceneImage} isLoading={isImageLoading} prompt={scenePrompt} />
+          )}
+          <NarrativePanel text={narrative} mood={mood} />
         </div>
 
         {/* Game content */}
@@ -426,9 +450,12 @@ export default function GamePage() {
           pendingAction={pendingAction}
           selectedCharacterId={selectedCharacterId}
           loading={loading}
+          uiResult={uiResult}
+          sceneImage={sceneImage}
+          scenePrompt={scenePrompt}
+          isImageLoading={isImageLoading}
           onTargetSelect={handleTargetSelect}
           onCellClick={handleCellClick}
-          onExitClick={handleExitClick}
           onStartGame={handleStartGame}
         />
 
@@ -457,16 +484,25 @@ export default function GamePage() {
           </div>
         )}
 
-        {/* Action bar */}
+        {/* Exit buttons + Action bar */}
         {gameState && !gameState.gameOver && !isMonsterTurn && (
-          <div className="px-4 pb-2">
-            <ActionBar
-              actions={availableActions}
-              pendingAction={pendingAction}
-              onActionClick={handleActionClick}
-              onCancelTargeting={handleCancelTargeting}
-              disabled={loading}
-            />
+          <div className="px-4 pb-2 flex items-center gap-3">
+            {gameState.currentRoom && gameState.currentRoom.exits.length > 0 && (
+              <ExitButtons
+                exits={gameState.currentRoom.exits}
+                onExitClick={handleExitClick}
+                disabled={loading || gameState.mode === 'combat'}
+              />
+            )}
+            <div className="flex-1 min-w-0">
+              <ActionBar
+                actions={availableActions}
+                pendingAction={pendingAction}
+                onActionClick={handleActionClick}
+                onCancelTargeting={handleCancelTargeting}
+                disabled={loading}
+              />
+            </div>
           </div>
         )}
 

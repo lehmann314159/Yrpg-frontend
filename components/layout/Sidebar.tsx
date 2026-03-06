@@ -3,7 +3,6 @@
 import type { GameStateSnapshot, MapCell } from '@/lib/types';
 import { PartyPanel } from '@/components/game/PartyPanel';
 import { DungeonMap } from '@/components/game/DungeonMap';
-import { FormationPanel } from '@/components/game/FormationPanel';
 import { InventoryPanel } from '@/components/game/InventoryPanel';
 
 interface SidebarProps {
@@ -39,9 +38,9 @@ export function Sidebar({ gameState, mapGrid, selectedCharacterId, onCharacterCl
           combat={gameState?.combat}
           selectedCharacterId={selectedCharacterId}
           onCharacterClick={onCharacterClick}
+          onReorder={onReorder}
+          reorderDisabled={formationDisabled}
         />
-
-        <FormationPanel party={gameState?.party || null} onReorder={onReorder} disabled={formationDisabled} />
 
         {/* Inventory for selected character */}
         {selectedChar && (

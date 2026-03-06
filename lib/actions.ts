@@ -124,8 +124,8 @@ export function getAvailableActions(
       needsCharacterId: true,
     });
 
-    // Disarm trap (thief only)
-    if (char.class === 'thief' && (gs.roomTraps || []).filter((t) => !t.isDisarmed).length > 0) {
+    // Disarm trap (thief only, untriggered traps)
+    if (char.class === 'thief' && (gs.roomTraps || []).filter((t) => !t.isDisarmed && !t.isTriggered).length > 0) {
       actions.push({
         id: 'disarm_trap',
         label: 'Disarm Trap',
@@ -254,7 +254,7 @@ export function getAvailableActions(
       });
 
       // Thief can disarm traps during scout phase
-      if (char.class === 'thief' && !combatant.hasActed && (gs.roomTraps || []).some((t) => !t.isDisarmed && t.difficulty > 0)) {
+      if (char.class === 'thief' && !combatant.hasActed && (gs.roomTraps || []).some((t) => !t.isDisarmed && !t.isTriggered && t.difficulty > 0)) {
         actions.push({
           id: 'disarm_trap',
           label: 'Disarm Trap',
@@ -283,8 +283,8 @@ export function getAvailableActions(
       });
     }
 
-    // Charge (fighter, hasn't moved or acted — rush + attack)
-    if (char.class === 'fighter' && !combatant.hasMoved && !combatant.hasActed) {
+    // Charge (fighter, hasn't moved or acted, once per combat — rush + attack)
+    if (char.class === 'fighter' && !combatant.hasMoved && !combatant.hasActed && !combatant.hasCharged) {
       actions.push({
         id: 'charge',
         label: 'Charge',
@@ -372,7 +372,7 @@ export function getAvailableActions(
     }
 
     // Disarm trap in combat (thief, hasn't acted)
-    if (char.class === 'thief' && !combatant.hasActed && (gs.roomTraps || []).some((t) => !t.isDisarmed && t.difficulty > 0)) {
+    if (char.class === 'thief' && !combatant.hasActed && (gs.roomTraps || []).some((t) => !t.isDisarmed && !t.isTriggered && t.difficulty > 0)) {
       actions.push({
         id: 'disarm_trap',
         label: 'Disarm Trap',

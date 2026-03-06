@@ -116,7 +116,7 @@ export function CombatGrid({
                 key={`${x}-${y}`}
                 onClick={isClickable ? handleClick : undefined}
                 className={cn(
-                  'combat-cell w-12 h-12 flex items-center justify-center rounded text-xs font-bold transition-colors',
+                  'combat-cell w-[80px] h-[80px] flex items-center justify-center rounded text-sm font-bold transition-colors',
                   isBlocked && 'bg-stone-950 border border-stone-800',
                   isEmpty && !isMoveValid && 'bg-stone-900/50 border border-stone-800/50',
                   // Move range highlight
@@ -165,7 +165,7 @@ export function CombatGrid({
                         <span className="text-green-400 ml-0.5" title="Protected">&#x1F6E1;</span>
                       )}
                     </span>
-                    <span className="text-[8px] text-stone-400">
+                    <span className="text-[10px] text-stone-400">
                       {combatant.hp}/{combatant.maxHp}
                     </span>
                   </div>

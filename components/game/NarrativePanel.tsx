@@ -7,7 +7,6 @@ import { BookOpen } from 'lucide-react';
 interface NarrativePanelProps {
   text: string;
   mood: Mood;
-  isStreaming?: boolean;
 }
 
 const moodBg: Record<Mood['atmosphere'], string> = {
@@ -19,7 +18,7 @@ const moodBg: Record<Mood['atmosphere'], string> = {
   triumphant: 'bg-emerald-950/20 border-emerald-800/50',
 };
 
-export function NarrativePanel({ text, mood, isStreaming }: NarrativePanelProps) {
+export function NarrativePanel({ text, mood }: NarrativePanelProps) {
   if (!text) return null;
 
   // Strip mood override block from display
@@ -32,7 +31,6 @@ export function NarrativePanel({ text, mood, isStreaming }: NarrativePanelProps)
         <BookOpen className="h-4 w-4 text-stone-400 mt-0.5 shrink-0" />
         <p className="text-sm text-stone-200 leading-relaxed italic">
           {displayText}
-          {isStreaming && <span className="animate-pulse text-stone-400">|</span>}
         </p>
       </div>
     </div>

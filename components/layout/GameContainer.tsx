@@ -2,6 +2,7 @@
 
 import type { GameStateSnapshot, Mood } from '@/lib/types';
 import type { PendingAction } from '@/lib/actions';
+import type { UIComponent, UIGenerationResult } from '@/lib/ui-types';
 import { cn } from '@/lib/utils';
 import { CombatGrid } from '@/components/game/CombatGrid';
 import { MonsterCard } from '@/components/game/MonsterCard';
@@ -10,10 +11,43 @@ import { TrapWarning } from '@/components/game/TrapWarning';
 import { CombatLog } from '@/components/game/CombatLog';
 import { Notification } from '@/components/game/Notification';
 import { SpellPanel } from '@/components/game/SpellPanel';
-import { ExitButtons } from '@/components/game/ExitButtons';
 import { NewGameDialog } from '@/components/game/NewGameDialog';
+import { SceneImage } from '@/components/game/SceneImage';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, Trophy, Skull } from 'lucide-react';
+import { MapPin, Trophy, Skull, Swords, Sparkles, Heart, AlertTriangle, Shield } from 'lucide-react';
+
+// Helper to find a specific component type from UI result
+function findUIComponent<T extends UIComponent['type']>(
+  uiResult: UIGenerationResult | null | undefined,
+  type: T,
+): Extract<UIComponent, { type: T }> | null {
+  if (!uiResult) return null;
+  const comp = uiResult.components.find((c) => c.type === type);
+  return comp as Extract<UIComponent, { type: T }> | null;
+}
+
+// Layout style CSS classes
+const layoutStyles = {
+  standard: 'space-y-4',
+  combat_focus: 'space-y-2',
+  cinematic: 'space-y-6 py-2',
+  dense: 'space-y-2',
+} as const;
+
+// Notification urgency styles
+const urgencyStyles = {
+  info: 'border-blue-700 bg-blue-950/40 text-blue-200',
+  warning: 'border-amber-700 bg-amber-950/40 text-amber-200',
+  danger: 'border-red-700 bg-red-950/40 text-red-200',
+  success: 'border-emerald-700 bg-emerald-950/40 text-emerald-200',
+} as const;
+
+const urgencyIcons = {
+  info: Sparkles,
+  warning: AlertTriangle,
+  danger: Skull,
+  success: Trophy,
+} as const;
 
 interface GameContainerProps {
   gameState: GameStateSnapshot | null;
@@ -22,9 +56,12 @@ interface GameContainerProps {
   pendingAction?: PendingAction | null;
   selectedCharacterId?: string | null;
   loading?: boolean;
+  uiResult?: UIGenerationResult | null;
+  sceneImage?: string | null;
+  scenePrompt?: string | null;
+  isImageLoading?: boolean;
   onTargetSelect?: (targetId: string) => void;
   onCellClick?: (x: number, y: number) => void;
-  onExitClick?: (direction: string) => void;
   onStartGame?: (characters: { name: string; class: 'fighter' | 'magic_user' | 'thief' }[]) => void;
 }
 
@@ -35,9 +72,12 @@ export function GameContainer({
   pendingAction,
   selectedCharacterId,
   loading,
+  uiResult,
+  sceneImage,
+  scenePrompt,
+  isImageLoading,
   onTargetSelect,
   onCellClick,
-  onExitClick,
   onStartGame,
 }: GameContainerProps) {
   if (!gameState) {
@@ -90,16 +130,73 @@ export function GameContainer({
   const isTargetingTrap = pendingAction?.targeting === 'trap';
   const isTargetingAlly = pendingAction?.targeting === 'ally';
 
+  // Extract AI-generated components
+  const layoutComp = findUIComponent(uiResult, 'layout');
+  const notificationComp = findUIComponent(uiResult, 'notification');
+  const combatSummaryComp = findUIComponent(uiResult, 'combat_summary');
+  const combatResultComp = findUIComponent(uiResult, 'combat_result');
+  const monsterEmphasis = findUIComponent(uiResult, 'monster_emphasis');
+  const lootHighlight = findUIComponent(uiResult, 'loot_highlight');
+  const partyCallout = findUIComponent(uiResult, 'party_callout');
+
+  const layoutStyle = layoutComp?.style ?? 'standard';
+
   return (
-    <div className={cn('flex-1 overflow-y-auto p-4 space-y-4', mood.palette)}>
-      {/* Notification */}
-      <Notification event={gs.lastEvent ?? null} />
+    <div className={cn('flex-1 overflow-y-auto p-4', layoutStyles[layoutStyle], mood.palette)}>
+      {/* AI notification banner */}
+      {notificationComp && (
+        <div className={cn(
+          'px-3 py-2 rounded border text-sm flex items-center gap-2',
+          urgencyStyles[notificationComp.urgency as keyof typeof urgencyStyles] ?? urgencyStyles.info,
+        )}>
+          {(() => {
+            const Icon = urgencyIcons[notificationComp.urgency as keyof typeof urgencyIcons] ?? Sparkles;
+            return <Icon className="h-4 w-4 shrink-0" />;
+          })()}
+          <div>
+            <span className="font-semibold">{notificationComp.title}</span>
+            {' '}<span className="opacity-80">{notificationComp.message}</span>
+          </div>
+        </div>
+      )}
+
+      {/* Deterministic notification (fallback when no AI notification) */}
+      {!notificationComp && <Notification event={gs.lastEvent ?? null} />}
+
+      {/* Combat result banner */}
+      {combatResultComp && (
+        <div className={cn(
+          'px-3 py-2 rounded border text-sm',
+          combatResultComp.wasCritical
+            ? 'border-amber-500 bg-amber-950/40 text-amber-200'
+            : 'border-stone-600 bg-stone-800/60 text-stone-200',
+        )}>
+          <div className="flex items-center gap-2">
+            <Swords className="h-4 w-4 shrink-0" />
+            <span className="font-semibold">
+              {combatResultComp.actor} → {combatResultComp.target}
+            </span>
+            {combatResultComp.damage != null && (
+              <Badge variant={combatResultComp.wasCritical ? 'warning' : 'secondary'} className="text-[10px]">
+                {combatResultComp.damage} DMG{combatResultComp.wasCritical ? ' CRIT' : ''}
+              </Badge>
+            )}
+            {combatResultComp.result === 'miss' && (
+              <Badge variant="secondary" className="text-[10px]">MISS</Badge>
+            )}
+          </div>
+          <p className="text-xs opacity-70 mt-1">{combatResultComp.description}</p>
+        </div>
+      )}
 
       {/* Room header */}
       {gs.currentRoom && (
         <div className="flex items-center gap-2">
           <MapPin className="h-4 w-4 text-stone-400" />
-          <h2 className="text-lg font-bold text-stone-100">{gs.currentRoom.name}</h2>
+          <h2 className={cn(
+            'font-bold text-stone-100',
+            layoutStyle === 'cinematic' ? 'text-xl' : 'text-lg',
+          )}>{gs.currentRoom.name}</h2>
           {gs.currentRoom.isFirstVisit && (
             <Badge variant="warning" className="text-[10px]">NEW</Badge>
           )}
@@ -114,23 +211,17 @@ export function GameContainer({
 
       {/* Room description */}
       {gs.currentRoom && (
-        <p className="text-sm text-stone-400">{gs.currentRoom.description}</p>
-      )}
-
-      {/* Exits — compass buttons instead of text */}
-      {gs.currentRoom && gs.currentRoom.exits.length > 0 && onExitClick && (
-        <ExitButtons
-          exits={gs.currentRoom.exits}
-          onExitClick={onExitClick}
-          disabled={loading || gs.mode === 'combat'}
-        />
+        <p className={cn(
+          'text-stone-400',
+          layoutStyle === 'cinematic' ? 'text-base' : 'text-sm',
+        )}>{gs.currentRoom.description}</p>
       )}
 
       {/* Traps */}
-      {gs.roomTraps.filter((t) => !t.isDisarmed).length > 0 && (
+      {gs.roomTraps.filter((t) => !t.isDisarmed && !t.isTriggered).length > 0 && (
         <div className="space-y-2">
           {gs.roomTraps
-            .filter((t) => !t.isDisarmed)
+            .filter((t) => !t.isDisarmed && !t.isTriggered)
             .map((trap) => (
               <TrapWarning
                 key={trap.id}
@@ -142,26 +233,49 @@ export function GameContainer({
         </div>
       )}
 
-      {/* Combat grid */}
+      {/* Combat tactical summary */}
+      {combatSummaryComp && gs.mode === 'combat' && (
+        <div className="px-3 py-2 rounded border border-stone-600 bg-stone-800/40 text-sm">
+          <div className="flex items-center gap-3">
+            <Shield className="h-4 w-4 text-stone-400 shrink-0" />
+            <span className="text-stone-300">
+              Round {combatSummaryComp.roundNumber} — <span className="font-semibold text-stone-100">{combatSummaryComp.currentTurn}</span>&apos;s turn
+            </span>
+            <Badge variant="secondary" className="text-[10px]">{combatSummaryComp.phase}</Badge>
+          </div>
+          {combatSummaryComp.tacticalHint && (
+            <p className="text-xs text-stone-400 mt-1 italic">{combatSummaryComp.tacticalHint}</p>
+          )}
+        </div>
+      )}
+
+      {/* Combat: scene image + grid side by side */}
       {gs.mode === 'combat' && gs.combat && (
-        <CombatGrid
-          combat={gs.combat}
-          party={gs.party || null}
-          mood={mood}
-          pendingAction={pendingAction}
-          selectedCharacterId={selectedCharacterId}
-          onCellClick={onCellClick}
-          onCombatantClick={
-            (isTargetingEnemy || isTargetingAlly) && onTargetSelect
-              ? (id) => onTargetSelect(id)
-              : undefined
-          }
-        />
+        <div className="flex items-start gap-4">
+          <SceneImage imageUrl={sceneImage ?? null} isLoading={isImageLoading ?? false} prompt={scenePrompt} />
+          <CombatGrid
+            combat={gs.combat}
+            party={gs.party || null}
+            mood={mood}
+            pendingAction={pendingAction}
+            selectedCharacterId={selectedCharacterId}
+            onCellClick={onCellClick}
+            onCombatantClick={
+              (isTargetingEnemy || isTargetingAlly) && onTargetSelect
+                ? (id) => onTargetSelect(id)
+                : undefined
+            }
+          />
+        </div>
       )}
 
       {/* Monsters (exploration mode) */}
       {gs.mode === 'exploration' && gs.monsters.filter((m) => !m.isDefeated).length > 0 && (
-        <div className="space-y-2">
+        <div className={cn(
+          'space-y-2',
+          monsterEmphasis?.emphasis === 'threatening' && 'ring-1 ring-red-500/50 rounded p-2 bg-red-950/20',
+          monsterEmphasis?.emphasis === 'trivial' && 'opacity-60',
+        )}>
           <h3 className="text-xs font-semibold text-stone-400 uppercase tracking-wider">
             Enemies
           </h3>
@@ -180,6 +294,24 @@ export function GameContainer({
         </div>
       )}
 
+      {/* Loot highlight */}
+      {lootHighlight && (
+        <div className="px-3 py-2 rounded border border-amber-700/50 bg-amber-950/20 text-sm">
+          <div className="flex items-center gap-2 mb-1">
+            <Sparkles className="h-4 w-4 text-amber-400" />
+            <span className="font-semibold text-amber-200">New Loot</span>
+            <span className="text-xs text-amber-400/70">from {lootHighlight.source}</span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {lootHighlight.items.map((item, i) => (
+              <Badge key={i} variant={item.rarity === 'rare' || item.rarity === 'legendary' ? 'warning' : 'secondary'} className="text-[10px]">
+                {item.name}
+              </Badge>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Room items */}
       {gs.roomItems.length > 0 && (
         <div className="space-y-2">
@@ -194,6 +326,26 @@ export function GameContainer({
                 isTargetable={isTargetingItem}
                 onClick={isTargetingItem && onTargetSelect ? () => onTargetSelect(item.id) : undefined}
               />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Party callout */}
+      {partyCallout && (
+        <div className="px-3 py-2 rounded border border-stone-600 bg-stone-800/40 text-sm">
+          <div className="flex items-center gap-2 mb-1">
+            <Heart className="h-4 w-4 text-emerald-400" />
+            <span className="font-semibold text-stone-200">Party Status</span>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            {partyCallout.characters.map((c, i) => (
+              <span key={i} className={cn(
+                'text-xs',
+                c.name === partyCallout.highlight ? 'text-emerald-300 font-semibold' : 'text-stone-400',
+              )}>
+                {c.name} ({c.className}) — {c.hpPct}% HP
+              </span>
             ))}
           </div>
         </div>
