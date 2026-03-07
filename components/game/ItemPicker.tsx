@@ -7,7 +7,6 @@ import { Backpack, ArrowUpFromLine, PackageMinus, HandHelping, X } from 'lucide-
 interface ItemPickerProps {
   character: CharacterView;
   mode: 'use' | 'equip' | 'drop' | 'give';
-  inCombat: boolean;
   onPickItem: (itemId: string) => void;
   onClose: () => void;
 }

@@ -65,9 +65,3 @@ export const moodThemes: Record<Mood['atmosphere'], string> = {
   mysterious: 'bg-indigo-950 text-indigo-100 border-indigo-700',
   triumphant: 'bg-emerald-950 text-emerald-100 border-emerald-600',
 };
-
-export const urgencyAccents: Record<Mood['urgency'], string> = {
-  normal: '',
-  elevated: 'ring-1 ring-amber-500/50',
-  critical: 'ring-2 ring-red-500 animate-pulse',
-};

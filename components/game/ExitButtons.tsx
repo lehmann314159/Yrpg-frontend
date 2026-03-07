@@ -27,7 +27,7 @@ export function ExitButtons({ exits, onExitClick, disabled }: ExitButtonsProps) 
         return (
           <button
             key={dir}
-            onClick={() => onExitClick(dir)}
+            onClick={available ? () => onExitClick(dir) : undefined}
             disabled={disabled || !available}
             className={cn(
               'w-10 h-10 rounded border flex items-center justify-center transition-colors',

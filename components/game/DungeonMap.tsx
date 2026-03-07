@@ -30,8 +30,6 @@ export function DungeonMap({ grid }: DungeonMapProps) {
   const cols = grid[0]?.length ?? 0;
   if (cols === 0) return null;
 
-  console.log('[DungeonMap] grid dimensions:', rows, 'x', cols, 'statuses:', grid.flat().map(c => c.status));
-
   const maxY = rows - 1;
 
   // Build CSS grid template: interleaved room (1.75rem) + corridor (0.25rem) tracks
@@ -74,7 +72,7 @@ export function DungeonMap({ grid }: DungeonMapProps) {
   return (
     <div>
       <h3 className="text-xs font-semibold text-stone-400 uppercase tracking-wider px-1 mb-2">
-        Dungeon Map v2
+        Map
       </h3>
       <div
         className="inline-grid"

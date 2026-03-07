@@ -14,7 +14,7 @@ import { parseCommand } from '@/lib/command-parser';
 import { sendCommand, generateUI } from './actions';
 import { getAvailableActions, getAutoSelectedCharacter, spellInfo } from '@/lib/actions';
 import type { GameStateSnapshot, MapCell, Mood } from '@/lib/types';
-import type { ActionDefinition, PendingAction, TargetingMode } from '@/lib/actions';
+import type { ActionDefinition, PendingAction } from '@/lib/actions';
 import type { UIGenerationResult } from '@/lib/ui-types';
 import { accumulateRoom, buildMapGrid, type AccumulatedRoom } from '@/lib/map-accumulator';
 import { cn } from '@/lib/utils';
@@ -79,8 +79,9 @@ export default function GamePage() {
 
     // Accumulate room data for the dungeon map
     if (gameState?.currentRoom) {
-      // Reset on new game (turn 1 or unknown room means fresh dungeon)
-      if (gameState.turnNumber === 1 || !accumulatedRoomsRef.current.has(gameState.currentRoom.id) && accumulatedRoomsRef.current.size > 0 && gameState.currentRoom.isEntrance) {
+      // Reset on new game (turn 1 or unvisited entrance means fresh dungeon)
+      const coordKey = `${gameState.currentRoom.x},${gameState.currentRoom.y}`;
+      if (gameState.turnNumber === 1 || (!accumulatedRoomsRef.current.has(coordKey) && accumulatedRoomsRef.current.size > 0 && gameState.currentRoom.isEntrance)) {
         accumulatedRoomsRef.current = new Map();
         imageCacheRef.current = new Map();
         setCombatLog([]);
@@ -119,7 +120,7 @@ export default function GamePage() {
           }
 
           // Phase 1: show backend text immediately
-          const generation = ++uiGenerationRef.current;
+          // const generation = ++uiGenerationRef.current;
           setNarrative(result.backendText);
           setUiResult(null);
 
@@ -477,7 +478,6 @@ export default function GamePage() {
             <ItemPicker
               character={selectedChar}
               mode={showItemPicker}
-              inCombat={gameState?.mode === 'combat'}
               onPickItem={handleItemPick}
               onClose={handleCancelTargeting}
             />

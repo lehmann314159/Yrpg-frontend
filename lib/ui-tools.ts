@@ -6,7 +6,7 @@ const layoutStyleSchema = z.enum(['standard', 'combat_focus', 'cinematic', 'dens
 const variantSchema = z.enum(['standard', 'dramatic', 'compact', 'atmospheric', 'minimal']).optional();
 const moodSchema = z.enum(['neutral', 'tense', 'triumphant', 'mysterious', 'dangerous', 'desperate']).optional();
 
-export const uiTools = {
+const uiTools = {
   ui_set_layout: tool({
     description: 'Set the main layout style. Must be called exactly once, before other tools.',
     inputSchema: z.object({

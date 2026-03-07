@@ -1,12 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { Plus, Minus, Swords, Wand2, Eye, Play, Zap } from 'lucide-react';
 
 type CharClass = 'fighter' | 'magic_user' | 'thief';
 
 interface CharRow {
+  key: number;
   name: string;
   charClass: CharClass;
 }
@@ -23,14 +24,15 @@ interface NewGameDialogProps {
 }
 
 export function NewGameDialog({ onStartGame, loading }: NewGameDialogProps) {
+  const keyCounter = useRef(1);
   const [rows, setRows] = useState<CharRow[]>([
-    { name: '', charClass: 'fighter' },
+    { key: 0, name: '', charClass: 'fighter' },
   ]);
 
   const addRow = () => {
     if (rows.length >= 3) return;
     const defaults: CharClass[] = ['fighter', 'magic_user', 'thief'];
-    setRows([...rows, { name: '', charClass: defaults[rows.length] || 'fighter' }]);
+    setRows([...rows, { key: keyCounter.current++, name: '', charClass: defaults[rows.length] || 'fighter' }]);
   };
 
   const removeRow = (idx: number) => {
@@ -73,7 +75,7 @@ export function NewGameDialog({ onStartGame, loading }: NewGameDialogProps) {
         {/* Character rows */}
         <div className="space-y-3">
           {rows.map((row, idx) => (
-            <div key={idx} className="flex items-center gap-2">
+            <div key={row.key} className="flex items-center gap-2">
               <input
                 value={row.name}
                 onChange={(e) => updateRow(idx, { name: e.target.value })}

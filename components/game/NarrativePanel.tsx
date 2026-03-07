@@ -26,7 +26,7 @@ export function NarrativePanel({ text, mood }: NarrativePanelProps) {
   if (!displayText) return null;
 
   return (
-    <div className={cn('rounded-lg border p-4 mb-4 transition-colors duration-500', moodBg[mood.atmosphere])}>
+    <div className={cn('rounded-lg border p-4 transition-colors duration-500', moodBg[mood.atmosphere])}>
       <div className="flex items-start gap-2">
         <BookOpen className="h-4 w-4 text-stone-400 mt-0.5 shrink-0" />
         <p className="text-sm text-stone-200 leading-relaxed italic">

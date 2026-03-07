@@ -167,11 +167,3 @@ export interface McpResponse {
   gameState?: GameStateSnapshot;
   isError?: boolean;
 }
-
-export interface LLMResponse {
-  narrative: string;
-  moodOverride?: {
-    atmosphere?: Mood['atmosphere'];
-    reason?: string;
-  };
-}

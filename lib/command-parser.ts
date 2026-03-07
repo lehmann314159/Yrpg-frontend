@@ -52,7 +52,7 @@ export function parseCommand(input: string): ParsedCommand {
   }
 
   // Rest
-  if (first === 'rest' || first === 'sleep' || first === 'camp') {
+  if (first === 'rest' || first === 'camp') {
     return { name: 'rest', arguments: {} };
   }
 

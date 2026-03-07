@@ -1,11 +1,12 @@
 'use client';
 
-import type { ActionDefinition, TargetingMode, PendingAction } from '@/lib/actions';
+import type { ActionDefinition, PendingAction } from '@/lib/actions';
 import { cn } from '@/lib/utils';
 import {
   Eye, Moon, PackagePlus, Package, Wrench, Wand2,
   Swords, Footprints, ShieldHalf, EyeOff, SkipForward, X,
   Radar, Users, LogOut, Backpack, ArrowUpFromLine,
+  ShieldPlus, Sparkles, Zap,
 } from 'lucide-react';
 
 const iconMap: Record<string, React.ReactNode> = {
@@ -25,6 +26,9 @@ const iconMap: Record<string, React.ReactNode> = {
   LogOut: <LogOut className="h-3.5 w-3.5" />,
   Backpack: <Backpack className="h-3.5 w-3.5" />,
   ArrowUpFromLine: <ArrowUpFromLine className="h-3.5 w-3.5" />,
+  ShieldPlus: <ShieldPlus className="h-3.5 w-3.5" />,
+  Sparkles: <Sparkles className="h-3.5 w-3.5" />,
+  Zap: <Zap className="h-3.5 w-3.5" />,
 };
 
 const targetingColors: Record<string, string> = {

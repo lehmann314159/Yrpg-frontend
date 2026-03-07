@@ -34,7 +34,6 @@ function hpColor(hp: number, maxHp: number): string {
 
 interface CharacterCardProps {
   character: CharacterView;
-  compact?: boolean;
   isCurrentTurn?: boolean;
   isSelected?: boolean;
   isFirst?: boolean;
@@ -44,7 +43,7 @@ interface CharacterCardProps {
   onClick?: () => void;
 }
 
-export function CharacterCard({ character, compact, isCurrentTurn, isSelected, isFirst, isLast, onMoveUp, onMoveDown, onClick }: CharacterCardProps) {
+export function CharacterCard({ character, isCurrentTurn, isSelected, isFirst, isLast, onMoveUp, onMoveDown, onClick }: CharacterCardProps) {
   const c = character;
 
   return (

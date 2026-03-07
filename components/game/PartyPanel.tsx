@@ -45,7 +45,6 @@ export function PartyPanel({ party, combat, selectedCharacterId, onCharacterClic
         <CharacterCard
           key={c.id}
           character={c}
-          compact
           isCurrentTurn={currentTurnId === c.id}
           isSelected={selectedCharacterId === c.id}
           isFirst={i === 0}
