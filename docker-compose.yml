@@ -1,0 +1,43 @@
+services:
+  frontend:
+    image: lehmann314159/yrpg-frontend:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - BACKEND_URL=http://backend:8080
+      - OLLAMA_BASE_URL=http://ollama:11434/v1
+      - COMFYUI_URL=http://comfyui:8188
+    depends_on:
+      - backend
+      - ollama
+      - comfyui
+
+  backend:
+    image: lehmann314159/yrpg-backend:latest
+    ports:
+      - "8080:8080"
+
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+
+  comfyui:
+    image: yanwk/comfyui-boot:latest
+    ports:
+      - "8188:8188"
+    volumes:
+      - comfyui-data:/root
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+volumes:
+  ollama-data:
+  comfyui-data:
